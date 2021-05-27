@@ -1,7 +1,7 @@
 spotify_artists.artist:
   path: '/spotify-artists/{artist_id}'
   defaults:
-    _title: 'Example'
+    _title_callback: '\Drupal\spotify_artists\Controller\SpotifyArtistsController::getTitle'
     _controller: '\Drupal\spotify_artists\Controller\SpotifyArtistsController::build'
   requirements:
     _user_is_logged_in: 'TRUE'

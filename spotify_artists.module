@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for Spotify Artists module.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function spotify_artists_theme() {
+  return [
+    'artist_page' => [
+      'variables' => [
+        'artist' => [],
+      ],
+    ],
+  ];
+}

@@ -23,7 +23,7 @@ class SpotifyApi {
    *
    * @var \Drupal\Core\Cache\CacheFactoryInterface
    */
-  protected $cacheBackendDatabase;
+  protected $cache;
 
   /**
    * Constructs a SpotifyApi object.
@@ -35,9 +35,15 @@ class SpotifyApi {
    */
   public function __construct(LoggerInterface $logger, CacheFactoryInterface $cache_backend_database) {
     $this->logger = $logger;
-    $this->cacheBackendDatabase = $cache_backend_database;
+    $this->cache = $cache_backend_database->get('spotify_artists');
   }
 
+  /**
+   * Get Authorization Header.
+   *
+   * @return array
+   *   Array of key and value to put in token retrieval calls.
+   */
   protected function getAuthorizationHeader() {
     $config = \Drupal::config('spotify_artists.settings');
     $client_id = $config->get('client_id');
@@ -62,6 +68,7 @@ class SpotifyApi {
   public function getAccessToken() {
     $cid = 'spotify_artists:access_token';
     $data = NULL;
+
     if ($cache = \Drupal::cache()->get($cid)) {
       $data = $cache->data;
     }
@@ -82,7 +89,6 @@ class SpotifyApi {
           'form_params' => [
             'grant_type' => 'client_credentials',
           ],
-          ['debug' => true]
         ]);
       }
       catch (\Exception $e) {
@@ -117,36 +123,47 @@ class SpotifyApi {
    *   Endpoint to call.
    * @param array $parameters
    *   Query parameters.
+   * @param int $timeout
+   *   Cache timeout.
    *
    * @return array
    *   Decoded body. Empty on failure.
    */
-  protected function get(string $endpoint, array $parameters) {
+  protected function get(string $endpoint, array $parameters = [], int $timeout = 60) {
     $access_token = $this->getAccessToken();
     $data = NULL;
 
-    if ($access_token) {
-      $client = new Client();
+    $cid = 'SpotifyApi_' . md5($endpoint . serialize($parameters));
+    $data = $this->cache->get($cid);
 
-      try {
-        $response = $client->request('GET', $endpoint, [
-          'query' => $parameters,
-          'headers' => [
-            'Authorization' => "Bearer $access_token",
-          ],
-        ]);
-      }
-      catch (\Exception $e) {
-        $this->logger->error("Call to $endpoint returned: " . $e->getMessage());
-      }
-      if (isset($response)) {
-        $statusCode = $response->getStatusCode();
+    if ($data || $timeout == 0) {
+      $data = $data->data;
+    }
+    else {
+      if ($access_token) {
+        $client = new Client();
 
-        if ($statusCode != 200) {
-          $this->logger->error("Call to $endpoint returned ($statusCode): " . $response->getBody());
+        try {
+          $response = $client->request('GET', $endpoint, [
+            'query' => $parameters,
+            'headers' => [
+              'Authorization' => "Bearer $access_token",
+            ],
+          ]);
         }
-        else {
-          $data = json_decode($response->getBody(), TRUE);
+        catch (\Exception $e) {
+          $this->logger->error("Call to $endpoint returned: " . $e->getMessage());
+        }
+        if (isset($response)) {
+          $statusCode = $response->getStatusCode();
+
+          if ($statusCode != 200) {
+            $this->logger->error("Call to $endpoint returned ($statusCode): " . $response->getBody());
+          }
+          else {
+            $data = json_decode($response->getBody(), TRUE);
+            $this->cache->set($cid, $data, time() + $timeout);
+          }
         }
       }
     }
@@ -169,16 +186,33 @@ class SpotifyApi {
   public function getArtistList(string $searchTerm = 'a', int $count = 20) {
     $endpoint = 'https://api.spotify.com/v1/search';
 
-    $data = $this->get($endpoint, [
+    $artist_list = $this->get($endpoint, [
       'type' => 'artist',
       'q' => 'a',
       'limit' => $count,
     ]);
-    if (!empty($data['artists']['items'])) {
-      foreach ($data['artists']['items'] as $artist) {
+    if (!empty($artist_list['artists']['items'])) {
+      foreach ($artist_list['artists']['items'] as $artist) {
         $data[$artist['id']] = $artist['name'];
       }
     }
+
+    return $data;
+  }
+
+  /**
+   * Get Artist
+   *
+   * @param string $artistId
+   *   Artist ID.
+   *
+   * @return array
+   *   Array of artist data.
+   */
+  public function getArtist(string $artistId) {
+    $endpoint = 'https://api.spotify.com/v1/artists/' . $artistId;
+
+    $data = $this->get($endpoint);
 
     return $data;
   }
