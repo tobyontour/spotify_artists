@@ -29,7 +29,12 @@ class SettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form['message'] = [
-      '#markup' => $this->t('Visit to register an App'),
+      '#markup' => $this->t(
+        'Visit <a href="@spotify">Spotify</a> to register an App to get the client ID and Secret Key.',
+        [
+          '@spotify' => 'https://developer.spotify.com/dashboard/login'
+        ]
+      ),
     ];
     $form['client_id'] = [
       '#type' => 'textfield',
@@ -41,7 +46,7 @@ class SettingsForm extends ConfigFormBase {
     ];
     $form['secret_key'] = [
       '#type' => 'password',
-      '#title' => $this->t('Secret Key'),
+      '#title' => $this->t('Secret Key (Client Secret)'),
       '#size' => 32,
       '#maxlength' => 32,
       '#required' => TRUE,
