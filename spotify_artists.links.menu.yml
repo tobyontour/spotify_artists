@@ -1,0 +1,6 @@
+spotify_artists.settings_form:
+  title: Spotify Artists
+  description: Configure Spotify Artists.
+  parent: system.admin_config_system
+  route_name: spotify_artists.settings_form
+  weight: 10

@@ -1,0 +1,6 @@
+name: Spotify Artists
+type: module
+description: Block and page to retrieve Spotify artists.
+package: Custom
+core: 8.x
+core_version_requirement: ^8 || ^9

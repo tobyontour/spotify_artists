@@ -1,0 +1,4 @@
+services:
+  spotify_artists.api:
+    class: Drupal\spotify_artists\Services\SpotifyApi
+    arguments: ['@logger.channel.default', '@cache.backend.database']

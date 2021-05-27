@@ -1,0 +1,15 @@
+spotify_artists.artist:
+  path: '/spotify-artists/{artist_id}'
+  defaults:
+    _title: 'Example'
+    _controller: '\Drupal\spotify_artists\Controller\SpotifyArtistsController::build'
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
+spotify_artists.settings_form:
+  path: '/admin/config/system/spotify-artists'
+  defaults:
+    _title: 'Spotify Artists settings'
+    _form: 'Drupal\spotify_artists\Form\SettingsForm'
+  requirements:
+    _permission: 'administer spotify_artists configuration'
